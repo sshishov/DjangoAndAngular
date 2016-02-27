@@ -1,4 +1,4 @@
-.PHONY: test fasttest run lint pep8 eslint
+.PHONY: test fasttest run lint pep8 eslint manage
 
 # Project settings
 LEVEL ?= development
@@ -23,12 +23,41 @@ else
 	PYTHON = $(ENV)/bin/python
 endif
 
+# Gunicorn settings
+GUNICORN_NAME ?= myezh
+GUNICORN_WORKERS ?= $(shell python -c "import multiprocessing; print(multiprocessing.cpu_count() * 2 + 1);")
+LOGS_DIR ?= ./logs
 SERVER_HOST ?= 0.0.0.0
-SERVER_PORT ?= 8000
+SERVER_PORT ?= 8008
+
+# Other settings
+DJANGO_SERVER ?= runserver
+DJANGO_SHELL ?= shell_plus
+
+# Setup bootstrapper & Gunicorn args
+has_bootstrapper = $(shell python -m bootstrapper --version 2>&1 | grep -v "No module")
+ifeq ($(LEVEL),development)
+	bootstrapper_args = -d
+	gunicorn_args = --reload
+	requirements = -r requirements.txt -r requirements-dev.txt
+else
+	gunicorn_args = --access-logfile=$(LOGS_DIR)/gunicorn.access.log \
+	--error-logfile=$(LOGS_DIR)/gunicorn.error.log
+	requirements = -r requirements.txt
+endif
+
+# Enable to install packages from non-HTTPS private PyPI
+PIP_TRUSTED_HOST ?= pypi.ezhome.io
+
+
+# Clean from temporary files
+clean:
+	find ./$(PROJECT)/ $(ENV) -name "*.pyc" -o -type d -empty -exec rm -rf {} +
 
 # Easy testing
-test:
-	python manage.py test
+test: clean pep8
+	$(COVERAGE) run --branch ./$(PROJECT)/manage.py test $(TEST_ARGS)
+	$(COVERAGE) report
 
 # Fast testing
 fasttest:
@@ -37,6 +66,28 @@ fasttest:
 # Run server
 run:
 	python manage.py runserver $(SERVER_HOST):$(SERVER_PORT)
+
+install: install-github-key install-py install-static
+
+install-github-key:
+	ssh-keygen -H -F github.com > /dev/null || ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+install-py:
+ifneq ($(has_bootstrapper),)
+	PIP_TRUSTED_HOST=$(PIP_TRUSTED_HOST) python -m bootstrapper -e $(ENV)/ $(bootstrapper_args)
+else
+	[ ! -d "$(ENV)/" ] && virtualenv $(ENV)/ || :
+	PIP_TRUSTED_HOST=$(PIP_TRUSTED_HOST) $(ENV)/bin/pip install $(requirements)
+endif
+
+install-static:
+	npm install
+# 	bower install
+# ifneq ($(CIRCLECI),)
+# 	-bower update
+# else
+# 	bower update
+# endif
 
 # Linter
 lint: pep8
@@ -52,3 +103,15 @@ eslint:
 ifeq ($(LEVEL),development)
 	npm run lint
 endif
+
+# Wrapper around manage command
+manage:
+	$(PYTHON) ./$(PROJECT)/manage.py $(COMMAND)
+
+# Development Server
+devserver: clean
+	COMMAND="$(DJANGO_SERVER) $(SERVER_HOST):$(SERVER_PORT)" $(MAKE) manage
+
+# Production Server
+server: clean pep8
+	LEVEL=$(LEVEL) PYTHONPATH=$(PROJECT) $(GUNICORN) -b $(SERVER_HOST):$(SERVER_PORT) -w $(GUNICORN_WORKERS) -n $(GUNICORN_NAME) -t 60 --graceful-timeout 60 $(gunicorn_args) $(GUNICORN_ARGS) $(PROJECT).wsgi:application

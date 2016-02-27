@@ -3,25 +3,35 @@ machine:
   environment:
     COVERALLS_REPO_TOKEN: BIJEGOKsEvdhmwdLlC2QMSp1k9tbjwBYk
     DATABASE_URL: postgres://ubuntu:@127.0.0.1:5432/circle_test
-    DJANGO_SETTINGS_MODULE: django_and_angular.settings
+    DJANGO_SETTINGS_MODULE: django_and_angular.settings.development
     LEVEL: development
-
   timezone:
-    Russia/Moscow # Set the timezone
-
-  # Version of ruby to use
+    America/Los_Angeles
+  node:
+    version: 5.5.0
   python:
-    version:
-      2.7.11
+    version: 2.7.10
+  services:
+    - postgresql
+
+dependencies:
+  cache_directories:
+    - bower_components
+    - node_modules
+    - webpack/.babel_cache
+  override:
+    - pip install -U pip wheel
+    - make install
 
 test:
   override:
-    - TEST_ARGS=--with-xunit make lint test
+    - TEST_ARGS='--with-xunit --with-json-extended' make lint test
 
   post:
-    - coveralls
+    # - coveralls
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
     - "[ -r nosetests.xml ] && mv nosetests.xml $CIRCLE_TEST_REPORTS/junit/ || :"
+    - "[ -r nosetests.json ] && mv nosetests.json $CIRCLE_TEST_REPORTS/junit/ || :"
 
 #  # Override /etc/hosts
 #  hosts:

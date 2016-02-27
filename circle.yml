@@ -25,7 +25,7 @@ dependencies:
 
 test:
   override:
-    - TEST_ARGS='--with-xunit --with-json-extended' make lint test
+    - TEST_ARGS='--with-xunit --with-json' make lint test
 
   post:
     # - coveralls

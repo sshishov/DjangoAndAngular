@@ -1,8 +1,7 @@
 from django.contrib.auth import update_session_auth_hash
-
 from rest_framework import serializers
 
-from authentication.models import Account
+from .models import Account
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -20,7 +19,9 @@ class AccountSerializer(serializers.ModelSerializer):
             return Account.objects.create(**validated_data)
 
         def update(self, instance, validated_data):
-            instance.username = validated_data.get('username', instance.username)
+            instance.username = validated_data.get(
+                'username', instance.username
+            )
             instance.tagline = validated_data.get('tagline', instance.tagline)
 
             instance.save()

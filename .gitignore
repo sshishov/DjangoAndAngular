@@ -30,3 +30,7 @@ staticfiles/
 # npm
 npm-debug.log
 
+# nose
+nosetests.json
+nosetests.xml
+

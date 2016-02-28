@@ -1,4 +1,4 @@
-.PHONY: test fasttest run lint pep8 eslint manage
+.PHONY: test fasttest run lint pep8 eslint manage report_failed_tests
 
 # Project settings
 LEVEL ?= development
@@ -33,6 +33,8 @@ SERVER_PORT ?= 8008
 # Other settings
 DJANGO_SERVER ?= runserver
 DJANGO_SHELL ?= shell_plus
+REPORT_FAILED_TEST ?= report_failed_tests
+REPORT_FAILED_TEST_BRANCHES ?= develop,master,test1
 
 # Setup bootstrapper & Gunicorn args
 has_bootstrapper = $(shell python -m bootstrapper --version 2>&1 | grep -v "No module")
@@ -115,3 +117,7 @@ devserver: clean
 # Production Server
 server: clean pep8
 	LEVEL=$(LEVEL) PYTHONPATH=$(PROJECT) $(GUNICORN) -b $(SERVER_HOST):$(SERVER_PORT) -w $(GUNICORN_WORKERS) -n $(GUNICORN_NAME) -t 60 --graceful-timeout 60 $(gunicorn_args) $(GUNICORN_ARGS) $(PROJECT).wsgi:application
+
+# Reporting of failed cases:
+report_failed_tests:
+	COMMAND="$(REPORT_FAILED_TEST) --branches $(REPORT_FAILED_TEST_BRANCHES) $(COMMAND_ARGS)" $(MAKE) manage

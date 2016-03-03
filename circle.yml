@@ -25,14 +25,13 @@ dependencies:
 
 test:
   override:
-    - TEST_ARGS='--with-xunit --with-json --json-file="./nosetests.json"' make lint test
+    - TEST_ARGS='--with-xunit' make lint test
 
   post:
     # - coveralls
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
     - "[ -r nosetests.xml ] && mv nosetests.xml $CIRCLE_TEST_REPORTS/junit/ || :"
-    - "[ -r nosetests.json ] && mv nosetests.json $CIRCLE_TEST_REPORTS/junit/ || :"
-    - COMMAND_ARGS='--target-branch develop' make report_failed_tests
+    - COMMAND_ARGS='--target-branch ${CIRCLE_BRANCH} --test-results ${CIRCLE_TEST_REPORTS}/junit/nosetests.xml' make report_failed_tests
 
 #  # Override /etc/hosts
 #  hosts:

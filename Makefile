@@ -33,15 +33,6 @@ SERVER_PORT ?= 8008
 # Other settings
 DJANGO_SERVER ?= runserver
 DJANGO_SHELL ?= shell_plus
-REPORT_FAILED_TEST ?= report_failed_tests
-REPORT_FAILED_TEST_BRANCHES ?= develop,master
-
-# JIRA Settings
-JIRA_ISSUE_TYPE ?= Bug
-JIRA_PROJECT_KEY ?= EZHOME
-JIRA_SERVER ?= https://ezhome-test.atlassian.net
-JIRA_USERNAME ?= jira_bot
-JIRA_PASSWORD ?= P@ssw0rd
 
 # Setup bootstrapper & Gunicorn args
 has_bootstrapper = $(shell python -m bootstrapper --version 2>&1 | grep -v "No module")
@@ -126,5 +117,5 @@ server: clean pep8
 	LEVEL=$(LEVEL) PYTHONPATH=$(PROJECT) $(GUNICORN) -b $(SERVER_HOST):$(SERVER_PORT) -w $(GUNICORN_WORKERS) -n $(GUNICORN_NAME) -t 60 --graceful-timeout 60 $(gunicorn_args) $(GUNICORN_ARGS) $(PROJECT).wsgi:application
 
 # Reporting of failed cases:
-report_failed_tests:
-	COMMAND="$(REPORT_FAILED_TEST) --branches $(REPORT_FAILED_TEST_BRANCHES) --issue-type $(JIRA_ISSUE_TYPE) --project-key $(JIRA_PROJECT_KEY) --jira-server $(JIRA_SERVER) --jira-username $(JIRA_USERNAME) --jira-password $(JIRA_PASSWORD) $(COMMAND_ARGS)" $(MAKE) manage
+jira_check_tests:
+	ezh-jira-test-checker run_check $(COMMAND_ARGS)

@@ -67,6 +67,13 @@ class Command(BaseCommand):
             default='nosetests.xml',
             help='Location of test results',
         ),
+        make_option(
+            '--jira-default-assignee',
+            action='store',
+            dest='jira_default_assignee',
+            default='',
+            help='Default assignee for new user',
+        )
     )
 
     def handle(self, *args, **options):
@@ -75,6 +82,7 @@ class Command(BaseCommand):
         self.jira_server = options['jira_server']
         self.jira_username = options['jira_username']
         self.jira_password = options['jira_password']
+        self.jira_default_assignee = options['jira_default_assignee']
         test_results = options['test_results']
 
         self.repo = Repo()
@@ -103,8 +111,13 @@ class Command(BaseCommand):
                 results = []
                 for testcase in root:
                     if testcase:
-                        results.append(self.handle_testcase(testcase))
-                return '\n'.join(results)
+                        result = self.handle_testcase(testcase)
+                        if result is not None:
+                            results.append(result)
+                if results:
+                    return '\n'.join(results)
+                else:
+                    return 'No errors in tests'
             else:
                 return 'No errors in tests'
         except IOError:
@@ -184,10 +197,20 @@ class Command(BaseCommand):
                 )
             else:
                 # Create issue
-                assignee = jira.search_users(
+                assignees = []
+                assignees.extend(jira.search_users(
                     user=authors['function'].email,
                     maxResults=1
-                )
+                ))
+                assignees.extend(jira.search_users(
+                    user=authors['failure'].email,
+                    maxResults=1
+                ))
+                if self.jira_default_assignee:
+                    assignees.extend(jira.search_users(
+                        user=self.jira_default_assignee,
+                        maxResults=1
+                    ))
                 issue_dict = dict(
                     project={'key': self.project_key},
                     summary=summary,
@@ -195,8 +218,8 @@ class Command(BaseCommand):
                     priority={'id': jira.priorities()[-1].id},
                     description='Description here',
                 )
-                if assignee:
-                    issue_dict['assignee'] = {'name': assignee[0].name}
+                if assignees:
+                    issue_dict['assignee'] = {'name': assignees[0].name}
                 new_issue = jira.create_issue(fields=issue_dict)
                 return 'New issue "{0}" has been created'.format(new_issue)
         except JIRAError as e:

@@ -5,6 +5,15 @@ machine:
     DATABASE_URL: postgres://ubuntu:@127.0.0.1:5432/circle_test
     DJANGO_SETTINGS_MODULE: django_and_angular.settings.development
     LEVEL: development
+
+    # JIRA integration
+    REPORT_FAILED_TEST_BRANCHES: develop,master,test1
+    JIRA_ISSUE_TYPE: Bug
+    JIRA_PROJECT_KEY: EZHOME
+    JIRA_SERVER:  https://ezhome-test.atlassian.net
+    JIRA_USERNAME: jira_bot
+    JIRA_PASSWORD: P@ssw0rd
+    JIRA_DEFAULT_ASSIGNEE: sshishov.sshishov@yandex.ru
   timezone:
     America/Los_Angeles
   node:
@@ -31,7 +40,7 @@ test:
     # - coveralls
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
     - "[ -r nosetests.xml ] && mv nosetests.xml $CIRCLE_TEST_REPORTS/junit/ || :"
-    - COMMAND_ARGS='--target-branch ${CIRCLE_BRANCH} --test-results ${CIRCLE_TEST_REPORTS}/junit/nosetests.xml' make report_failed_tests
+    - "COMMAND_ARGS='--target-branch ${CIRCLE_BRANCH} --test-results ${CIRCLE_TEST_REPORTS}/junit/nosetests.xml --branches $(REPORT_FAILED_TEST_BRANCHES) --issue-type $(JIRA_ISSUE_TYPE) --project-key $(JIRA_PROJECT_KEY) --jira-server $(JIRA_SERVER) --jira-username $(JIRA_USERNAME) --jira-password $(JIRA_PASSWORD) --jira-default-assignee $(JIRA_DEFAULT_ASSIGNEE)' make jira_check_tests || :"
 
 #  # Override /etc/hosts
 #  hosts:

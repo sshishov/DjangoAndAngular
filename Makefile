@@ -1,4 +1,4 @@
-.PHONY: test fasttest run lint pep8 eslint manage
+.PHONY: test fasttest run lint pep8 eslint manage report_failed_tests
 
 # Project settings
 LEVEL ?= development
@@ -115,3 +115,7 @@ devserver: clean
 # Production Server
 server: clean pep8
 	LEVEL=$(LEVEL) PYTHONPATH=$(PROJECT) $(GUNICORN) -b $(SERVER_HOST):$(SERVER_PORT) -w $(GUNICORN_WORKERS) -n $(GUNICORN_NAME) -t 60 --graceful-timeout 60 $(gunicorn_args) $(GUNICORN_ARGS) $(PROJECT).wsgi:application
+
+# Reporting of failed cases:
+jira_check_tests:
+	ezh-jira-test-checker run_check $(COMMAND_ARGS)

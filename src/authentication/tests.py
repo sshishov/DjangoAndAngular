@@ -7,5 +7,4 @@ class AuthenticationTestCase(TestCase):
         pass
 
     def test_failure(self):
-        # self.fail('Failed test')
-        pass
+        self.fail('Failed test')
